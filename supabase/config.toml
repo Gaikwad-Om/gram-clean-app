@@ -1,0 +1,5 @@
+project_id = "gram-clean"
+
+# @supabase/server verifies the authenticated user token in the handler.
+[functions.report-assistant]
+verify_jwt = false
