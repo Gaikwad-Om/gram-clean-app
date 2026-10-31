@@ -4,7 +4,7 @@ The initial migration creates the organization-scoped tables, membership checks,
 
 ## First village bootstrap
 
-1. Create the project, set Auth providers and redirect URLs, and apply the migration.
+1. Create the project, enable the Email provider, set the Site URL to `https://gram-clean.vercel.app`, and add that URL under Auth URL Configuration → Redirect URLs. For local development, also allow `http://localhost:5173`. The production redirect is used by email confirmation and password recovery links. Apply the migration.
 2. Register the first administrator account through Supabase Auth.
 3. In the SQL editor, create the village and grant that account its first admin membership. Replace both sample values:
 

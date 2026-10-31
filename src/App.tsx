@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { categories, departments, leaderboard, seedIssues, wards, workers } from './data'
 import type { Issue, Role, Status } from './types'
-import { AuthScreen, JoinVillageScreen } from './AuthScreen'
+import { AuthScreen, JoinVillageScreen, PasswordRecoveryScreen } from './AuthScreen'
 import { findSimilarVillageIssues, getVillageProfile, getVillageWorkspaces, joinVillage, loadMemberPoints, loadVillageIssues, loadVillageLeaderboard, loadVillageMembers, loadVillageNotifications, markVillageNotificationRead, runIssueWorkflow, saveVillageDepartment, saveVillageWard, setVillageMemberActive, submitVillageIssue, updateVillageMemberRole, type LeaderboardMember, type SimilarVillageIssue, type VillageMember, type VillageNotification, type VillageProfile, type VillageWorkspace, type WorkspaceLookups } from './lib/village'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { assistReport, type ReportSuggestion } from './lib/ai'
@@ -62,6 +62,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured)
   const [workspaces, setWorkspaces] = useState<VillageWorkspace[]>([])
   const [profile, setProfile] = useState<VillageProfile | null>(null)
@@ -83,8 +84,12 @@ function App() {
   useEffect(() => {
     if (!supabase) { setAuthReady(true); return }
     let alive = true
+    if (window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).get('type') === 'recovery') setPasswordRecovery(true)
     void supabase.auth.getSession().then(({ data }) => { if (alive) { setSession(data.session); setAuthReady(true) } })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession)
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
+    })
     return () => { alive = false; subscription.unsubscribe() }
   }, [])
   useEffect(() => { if (!liveMode) localStorage.setItem('gram-clean-demo-issues', JSON.stringify(issues)) }, [issues, liveMode])
@@ -274,6 +279,10 @@ function App() {
   }
 
   if (liveMode && !authReady) return <div className="auth-loading"><LoaderCircle className="spin" size={22} /> Connecting securely…</div>
+  if (liveMode && passwordRecovery) return <PasswordRecoveryScreen onComplete={() => {
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`)
+    setPasswordRecovery(false)
+  }} />
   if (liveMode && !session) return <AuthScreen />
   if (liveMode && session && workspaceLoading) return <div className="auth-loading"><LoaderCircle className="spin" size={22} /> Loading your village…</div>
   if (liveMode && session && workspaceError && workspaces.length === 0) return <div className="auth-loading auth-load-error"><p>{workspaceError}</p><button className="outline-button" onClick={() => void signOut()}>Sign out</button></div>
